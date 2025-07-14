@@ -18,16 +18,19 @@ public class PasswordResetService {
     private final PasswordResetRepository tokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;  // injecté
 
     public PasswordResetService(PasswordResetRepository tokenRepository,
                                  UserRepository userRepository,
-                                 PasswordEncoder passwordEncoder) {
+                                 PasswordEncoder passwordEncoder,
+                                 EmailService emailService) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
-    // Étape 1 - Générer et enregistrer un token
+    // Étape 1 - Générer et enregistrer un token, puis envoyer mail
     public String createPasswordResetToken(String email) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (optionalUser.isEmpty()) {
@@ -42,10 +45,10 @@ public class PasswordResetService {
         PasswordReset resetToken = new PasswordReset(token, user, now, expiresAt);
         tokenRepository.save(resetToken);
 
-        // Simuler envoi email (à remplacer plus tard par vrai service)
-        System.out.println("Lien de réinitialisation du mot de passe : http://localhost:8080/reset-password?token=" + token);
+        // Envoi du mail avec le token
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
 
-        return "Un lien de réinitialisation a été envoyé.";
+        return "Un lien de réinitialisation a été envoyé à votre adresse email.";
     }
 
     // Étape 2 - Réinitialiser le mot de passe
@@ -65,7 +68,7 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        // Optionnel : supprimer le token une fois utilisé
+        // Supprimer le token après usage
         tokenRepository.delete(resetToken);
 
         return "Mot de passe réinitialisé avec succès.";
