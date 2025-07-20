@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // Applique CORS à toutes les routes
-                .allowedOrigins("http://localhost:8081") // 👈 autorise le port du front
+                .allowedOrigins("http://localhost:4200") // 👈 autorise le port du front
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*") // Autorise tous les headers
                 .allowCredentials(true); // Nécessaire si tu utilises les cookies
