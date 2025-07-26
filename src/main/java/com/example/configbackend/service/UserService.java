@@ -25,18 +25,16 @@ public class UserService implements UserDetailsService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Met à jour un utilisateur existant (utile pour activation, etc.)
     public User updateUser(User user) {
         return userRepository.save(user);
     }
 
-    // Enregistre un nouvel utilisateur avec rôle USER par défaut
     public User register(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email déjà utilisé");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setActif(false); // utilisateur pas actif tant qu’il n’a pas validé email
+        user.setActif(false); 
         user.setRole(user.getRole() == null ? "USER" : user.getRole().toUpperCase());
         return userRepository.save(user);
     }
@@ -52,12 +50,12 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public User createAdmin(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("ADMIN");
-        user.setActif(true);
-        return userRepository.save(user);
-    }
+    // public User createAdmin(User user) {
+    //     user.setPassword(passwordEncoder.encode(user.getPassword()));
+    //     user.setRole("ADMIN");
+    //     user.setActif(true);
+    //     return userRepository.save(user);
+    // }
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
@@ -91,8 +89,16 @@ public class UserService implements UserDetailsService {
         }
         return false;
     }
+
     public User save(User user) {
-    return userRepository.save(user);
-}
+        return userRepository.save(user);
+    }
+
+    public User registerAdmin(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole("ADMIN");
+        user.setActif(true);
+        return userRepository.save(user);
+    }
 
 }

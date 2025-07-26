@@ -24,7 +24,7 @@ public class AuthService {
 
     @Autowired
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JWTUtils jwtUtils, AuthenticationManager authenticationManager) {
+            JWTUtils jwtUtils, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
@@ -58,4 +58,5 @@ public class AuthService {
         String token = jwtUtils.generateToken(user.getEmail(), user.getRole());
         return new AuthResponse(token);
     }
+
 }

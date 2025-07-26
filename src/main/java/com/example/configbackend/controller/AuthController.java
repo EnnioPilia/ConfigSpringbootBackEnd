@@ -125,4 +125,54 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        // Supprimer le cookie en le vidant et en mettant maxAge=0
+        ResponseCookie cookie = ResponseCookie.from("adminToken", "")
+                .httpOnly(true)
+                .secure(false) // pareil que pour la création du cookie (true en prod)
+                .path("/")
+                .maxAge(0) // supprime le cookie
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
+    }
+
+    @PostMapping("/registerAdmin")
+    public ResponseEntity<?> registerAdmin(@RequestBody RegisterRequest request) {
+        try {
+            User user = new User();
+
+            // Séparation nom/prénom si le champ name est fourni
+            if (request.getName() != null && !request.getName().isBlank()) {
+                String[] parts = request.getName().trim().split(" ", 2);
+                user.setNom(parts[0]);
+                user.setPrenom(parts.length > 1 ? parts[1] : "");
+            } else {
+                user.setNom("");
+                user.setPrenom("");
+            }
+
+            user.setEmail(request.getEmail().toLowerCase());
+            user.setPassword(request.getPassword());
+            user.setAge(request.getAge());
+
+            // Logique spécifique à l'admin
+            user.setRole("ADMIN");   // rôle forcé ADMIN
+            user.setActif(true);     // admin actif directement
+
+            // Sauvegarde avec la logique dédiée à l’admin (mot de passe encodé, etc.)
+            User savedAdmin = userService.registerAdmin(user);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Admin créé avec succès", "userId", savedAdmin.getId()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }
