@@ -21,15 +21,15 @@ public class PasswordResetController {
     }
 
     // Étape 1 : Demande de reset (envoi du mail avec token)
-@PostMapping("/request-reset")
-public ResponseEntity<String> requestReset(@RequestBody PasswordResetRequestDto request) {  // <- ici, bien PasswordResetRequestDto
-    String email = request.getEmail();
-    if (email == null || email.isEmpty()) {
-        return ResponseEntity.badRequest().body("Email est requis");
+    @PostMapping("/request-reset")
+    public ResponseEntity<String> requestReset(@RequestBody PasswordResetRequestDto request) {  // <- ici, bien PasswordResetRequestDto
+        String email = request.getEmail();
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email est requis");
+        }
+        String result = passwordResetService.createPasswordResetToken(email);
+        return ResponseEntity.ok(result);
     }
-    String result = passwordResetService.createPasswordResetToken(email);
-    return ResponseEntity.ok(result);
-}
 
     // Étape 2 : Réinitialisation du mot de passe avec token et nouveau mdp
     @PostMapping("/reset-password")
