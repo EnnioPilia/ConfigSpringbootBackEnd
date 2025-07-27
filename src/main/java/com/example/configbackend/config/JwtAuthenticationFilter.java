@@ -53,7 +53,7 @@ protected void doFilterInternal(HttpServletRequest request,
         // Sinon, lire le token à partir du cookie "adminToken" (fallback)
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("adminToken".equals(cookie.getName())) {
+                if ("authToken".equals(cookie.getName())) {
                     token = cookie.getValue();
                     break;
                 }

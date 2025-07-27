@@ -95,7 +95,7 @@ public class AuthController {
             String token = jwtUtils.generateToken(request.getEmail().toLowerCase(), cleanRole);
 
             // Création du cookie sécurisé
-            ResponseCookie cookie = ResponseCookie.from("adminToken", token)
+            ResponseCookie cookie = ResponseCookie.from("authToken", token)
                     .httpOnly(true)
                     .secure(false) // mettre true en production avec HTTPS
                     .path("/")
@@ -129,7 +129,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         // Supprimer le cookie en le vidant et en mettant maxAge=0
-        ResponseCookie cookie = ResponseCookie.from("adminToken", "")
+        ResponseCookie cookie = ResponseCookie.from("authToken", "")
                 .httpOnly(true)
                 .secure(false) // pareil que pour la création du cookie (true en prod)
                 .path("/")
