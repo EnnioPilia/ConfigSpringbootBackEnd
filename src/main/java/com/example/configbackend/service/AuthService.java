@@ -38,6 +38,9 @@ public class AuthService {
     @Autowired
     private VerificationService verificationService;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService; // à ajouter
+
     public String register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail().toLowerCase()).isPresent()) {
             throw new RuntimeException("Email déjà utilisé");
@@ -85,17 +88,34 @@ public class AuthService {
         }
 
         String role = user.getRole().toLowerCase();
+
+        // Génération du JWT (authToken)
         String token = jwtUtils.generateToken(user.getEmail(), role);
 
-        // Créer le cookie
-        ResponseCookie cookie = ResponseCookie.from("authToken", token)
+        // Génération du refresh token
+        String refreshTokenStr = refreshTokenService.createRefreshToken(user).getToken();
+
+        // Créer le cookie authToken
+        ResponseCookie authCookie = ResponseCookie.from("authToken", token)
                 .httpOnly(true)
-                .secure(false) // passer à true en prod avec HTTPS
+                .secure(false) // mettre true en prod avec HTTPS
                 .path("/")
+                .maxAge(jwtUtils.getJwtExpirationMs() / 1000)
                 .sameSite("Strict")
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString());
+        // Créer le cookie refreshToken
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshTokenStr)
+                .httpOnly(true)
+                .secure(false) // mettre true en prod avec HTTPS
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60) // 7 jours
+                .sameSite("Strict")
+                .build();
+
+        // Ajouter les cookies à la réponse
+        response.addHeader("Set-Cookie", authCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
 
         return new LoginResponse("Connexion réussie !", token);
     }
@@ -110,7 +130,8 @@ public class AuthService {
     }
 
     public void logout(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("authToken", "")
+        // Supprimer le cookie authToken
+        ResponseCookie authCookie = ResponseCookie.from("authToken", "")
                 .httpOnly(true)
                 .secure(false) // true en prod
                 .path("/")
@@ -118,6 +139,16 @@ public class AuthService {
                 .sameSite("Strict")
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString());
+        // Supprimer le cookie refreshToken
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false) // true en prod
+                .path("/")
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader("Set-Cookie", authCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
     }
 }

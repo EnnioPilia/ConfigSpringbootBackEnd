@@ -53,6 +53,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/login", "/auth/register", "/auth/verify", "/auth/logout").permitAll()
                 .requestMatchers("/auth/request-reset", "/auth/reset-password").permitAll()
+                .requestMatchers("/auth/refresh-token").permitAll()
                 // .requestMatchers("/objects/**").hasAnyRole("USER", "ADMIN")
                 // .requestMatchers("/conversation/**").hasAnyRole("USER", "ADMIN")
                 // .requestMatchers("/message/**").hasAnyRole("USER", "ADMIN")

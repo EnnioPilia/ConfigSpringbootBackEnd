@@ -1,6 +1,7 @@
 package com.example.configbackend.controller;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,11 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.configbackend.config.JWTUtils;
 import com.example.configbackend.dto.LoginRequest;
-import com.example.configbackend.dto.LoginResponse;
+import com.example.configbackend.dto.LoginResponse;  // adapte ce package selon l'emplacement réel de ta classe User
 import com.example.configbackend.dto.RegisterRequest;
+import com.example.configbackend.model.RefreshToken;
+import com.example.configbackend.model.User;
 import com.example.configbackend.service.AuthService;
+import com.example.configbackend.service.RefreshTokenService;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
@@ -25,6 +32,12 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private JWTUtils jwtUtils;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
@@ -61,4 +74,40 @@ public class AuthController {
         authService.logout(response);
         return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
     }
+
+@PostMapping("/refresh-token")
+public ResponseEntity<?> refreshToken(HttpServletRequest request) {
+    String token = null;
+
+    if (request.getCookies() != null) {
+        for (Cookie cookie : request.getCookies()) {
+            if ("refreshToken".equals(cookie.getName())) {
+                token = cookie.getValue();
+                break;
+            }
+        }
+    }
+
+    if (token == null) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Refresh token manquant dans les cookies."));
+    }
+
+    Optional<RefreshToken> refreshTokenOpt = refreshTokenService.findByToken(token);
+
+    if (refreshTokenOpt.isEmpty() || refreshTokenService.isRefreshTokenExpired(refreshTokenOpt.get())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "Refresh token invalide ou expiré."));
+    }
+
+    User user = refreshTokenOpt.get().getUser();
+
+    String newAccessToken = jwtUtils.generateToken(user.getEmail(), user.getRole());
+
+    return ResponseEntity.ok(Map.of(
+        "accessToken", newAccessToken,
+        "message", "Nouveau access token généré avec succès"
+    ));
+}
+
 }

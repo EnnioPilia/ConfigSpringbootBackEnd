@@ -20,7 +20,7 @@ public class JWTUtils {
     private final int jwtExpirationMs;
 
     public JWTUtils(@Value("${app.jwtSecret}") String jwtSecret,
-            @Value("${app.jwtExpirationMs}") int jwtExpirationMs) {
+                    @Value("${app.jwtExpirationMs}") int jwtExpirationMs) {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpirationMs = jwtExpirationMs;
     }
@@ -30,7 +30,7 @@ public class JWTUtils {
     }
 
     public String generateToken(String email, String role) {
-        String cleanRole = role.toUpperCase(); // 💥 Ajout défensif
+        String cleanRole = role.toUpperCase();
         String prefixedRole = cleanRole.startsWith("ROLE_") ? cleanRole : "ROLE_" + cleanRole;
         return Jwts.builder()
                 .setSubject(email)
@@ -63,4 +63,7 @@ public class JWTUtils {
         return false;
     }
 
+    public int getJwtExpirationMs() {
+        return jwtExpirationMs;
+    }
 }
