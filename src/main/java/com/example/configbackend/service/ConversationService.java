@@ -1,6 +1,7 @@
 package com.example.configbackend.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,8 @@ public class ConversationService {
         return conversationRepository.save(conversation);
     }
 
-    public Conversation getConversationById(Long id, User currentUser) {
+    // Passage de Long à UUID ici
+    public Conversation getConversationById(UUID id, User currentUser) {
         Conversation conversation = conversationRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
 
@@ -41,12 +43,14 @@ public class ConversationService {
         return conversation;
     }
 
-    public void deleteConversation(Long id, User currentUser) {
+    // Passage de Long à UUID ici aussi
+    public void deleteConversation(UUID id, User currentUser) {
         Conversation conversation = getConversationById(id, currentUser);
         conversationRepository.delete(conversation);
     }
 
-    public List<Conversation> getConversationsByUserId(Long userId) {
+    // Idem pour les ids utilisateurs (UUID)
+    public List<Conversation> getConversationsByUserId(UUID userId) {
         return conversationRepository.findByUser1IdOrUser2Id(userId, userId);
     }
 

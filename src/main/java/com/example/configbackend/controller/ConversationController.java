@@ -2,6 +2,7 @@ package com.example.configbackend.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class ConversationController {
     private ConversationAccessService accessService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<Conversation> getConversationById(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Conversation> getConversationById(@PathVariable UUID id, Principal principal) {
         User currentUser = accessService.getCurrentUser(principal);
         Conversation conversation = conversationService.getConversationById(id, currentUser);
         return ResponseEntity.ok(conversation);
@@ -53,7 +54,7 @@ public class ConversationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteConversation(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Void> deleteConversation(@PathVariable UUID id, Principal principal) {
         User currentUser = accessService.getCurrentUser(principal);
         conversationService.deleteConversation(id, currentUser);
         return ResponseEntity.noContent().build();

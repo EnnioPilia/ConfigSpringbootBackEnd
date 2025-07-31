@@ -1,6 +1,7 @@
 package com.example.configbackend.service;
 
 import java.security.Principal;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class ConversationAccessService {
     }
 
     // Vérifie que la conversation appartient à l'utilisateur connecté (user1 ou user2).
-    public Conversation getOwnedConversation(Long conversationId, User currentUser) {
+    public Conversation getOwnedConversation(UUID conversationId, User currentUser) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation non trouvée : " + conversationId));
 

@@ -2,6 +2,7 @@ package com.example.configbackend.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,7 +28,6 @@ public class UserService implements UserDetailsService {
     }
 
     public User updateUser(User user) {
-        // Attention à bien vérifier que l'utilisateur existe avant update en pratique
         return userRepository.save(user);
     }
 
@@ -37,7 +37,7 @@ public class UserService implements UserDetailsService {
         }
         user.setEmail(user.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setActif(false); // Inactif jusqu'à vérification
+        user.setActif(false);
         user.setRole(user.getRole() == null ? "USER" : user.getRole().toUpperCase());
         return userRepository.save(user);
     }
@@ -58,7 +58,7 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(email.toLowerCase());
     }
 
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(UUID id) {
         return userRepository.findById(id);
     }
 
@@ -78,7 +78,7 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
-    public boolean deleteUserById(Long id) {
+    public boolean deleteUserById(UUID id) {
         Optional<User> user = userRepository.findById(id);
         if (user.isPresent()) {
             userRepository.deleteById(id);

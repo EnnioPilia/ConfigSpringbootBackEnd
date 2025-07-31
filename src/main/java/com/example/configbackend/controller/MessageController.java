@@ -2,6 +2,7 @@ package com.example.configbackend.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class MessageController {
     // Create a new message in a conversation
     @PostMapping("/send/{conversationId}")
     public ResponseEntity<Message> sendMessage(
-            @PathVariable Long conversationId,
+            @PathVariable UUID conversationId,
             @RequestBody MessageDTO messageDto) {
 
         Message message = messageService.sendMessage(
@@ -41,7 +42,7 @@ public class MessageController {
     // Get all messages from a conversation
     @GetMapping("/conversation/{conversationId}")
     public ResponseEntity<List<Message>> getMessagesByConversation(
-            @PathVariable Long conversationId) {
+            @PathVariable UUID conversationId) {
 
         List<Message> messages = messageService.getMessagesByConversation(conversationId);
         return ResponseEntity.ok(messages);
@@ -49,8 +50,8 @@ public class MessageController {
 
     // Delete a message (with access control)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMessage(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Void> deleteMessage(@PathVariable UUID id, Principal principal) {
         messageService.deleteMessage(id, principal.getName()); // uses email/username
         return ResponseEntity.noContent().build();
     }  
-    }
+}

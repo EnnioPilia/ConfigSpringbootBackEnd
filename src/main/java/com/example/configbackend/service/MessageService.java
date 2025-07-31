@@ -1,6 +1,7 @@
 package com.example.configbackend.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class MessageService {
         this.userRepository = userRepository;
     }
 
-    public Message sendMessage(Long conversationId, Long senderId, String content) {
+    public Message sendMessage(UUID conversationId, UUID senderId, String content) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
 
@@ -44,14 +45,14 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public List<Message> getMessagesByConversation(Long conversationId) {
+    public List<Message> getMessagesByConversation(UUID conversationId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
 
         return messageRepository.findByConversationOrderByDateEnvoiAsc(conversation);
     }
 
-    public void deleteMessage(Long messageId, String currentUsername) {
+    public void deleteMessage(UUID messageId, String currentUsername) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new EntityNotFoundException("Message not found"));
 
