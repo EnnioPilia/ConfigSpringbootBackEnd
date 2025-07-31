@@ -22,26 +22,24 @@ public class PasswordResetController {
 
     // Étape 1 : Demande de reset (envoi du mail avec token)
     @PostMapping("/request-reset")
-    public ResponseEntity<String> requestReset(@RequestBody PasswordResetRequestDto request) {  // <- ici, bien PasswordResetRequestDto
+    public ResponseEntity<String> requestReset(@RequestBody PasswordResetRequestDto request) {
         String email = request.getEmail();
-        if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email est requis");
+        try {
+            String result = passwordResetService.createPasswordResetToken(email);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        String result = passwordResetService.createPasswordResetToken(email);
-        return ResponseEntity.ok(result);
     }
 
     // Étape 2 : Réinitialisation du mot de passe avec token et nouveau mdp
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody PasswordResetDto dto) {
-        String token = dto.getToken();
-        String newPassword = dto.getNewPassword();
-
-        if (token == null || token.isEmpty() || newPassword == null || newPassword.isEmpty()) {
-            return ResponseEntity.badRequest().body("Token et nouveau mot de passe sont requis");
+        try {
+            String result = passwordResetService.resetPassword(dto.getToken(), dto.getNewPassword());
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        String result = passwordResetService.resetPassword(token, newPassword);
-        return ResponseEntity.ok(result);
     }
-
 }

@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.configbackend.dto.MessageDTO;
 import com.example.configbackend.model.Message;
-import com.example.configbackend.model.User;
-import com.example.configbackend.service.ConversationAccessService;
 import com.example.configbackend.service.MessageService;
 
 @RestController
@@ -25,58 +24,33 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
-    @Autowired
-    private ConversationAccessService accessService; // pour récupérer l'utilisateur courant
-
-    // Créer un nouveau message dans une conversation
+    // Create a new message in a conversation
     @PostMapping("/send/{conversationId}")
-    public ResponseEntity<Message> envoyerMessage(
+    public ResponseEntity<Message> sendMessage(
             @PathVariable Long conversationId,
             @RequestBody MessageDTO messageDto) {
 
-        Message message = messageService.envoyerMessage(
+        Message message = messageService.sendMessage(
                 conversationId,
                 messageDto.getSenderId(),
                 messageDto.getContenu());
+
         return ResponseEntity.ok(message);
     }
 
-    // Récupérer tous les messages d'une conversation
+    // Get all messages from a conversation
     @GetMapping("/conversation/{conversationId}")
-    public ResponseEntity<List<Message>> getMessagesParConversation(
+    public ResponseEntity<List<Message>> getMessagesByConversation(
             @PathVariable Long conversationId) {
 
-        List<Message> messages = messageService.getMessagesParConversation(conversationId);
+        List<Message> messages = messageService.getMessagesByConversation(conversationId);
         return ResponseEntity.ok(messages);
     }
 
-    // Supprimer un message par son id (avec contrôle d'accès)
+    // Delete a message (with access control)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMessage(@PathVariable Long id, Principal principal) {
-        User currentUser = accessService.getCurrentUser(principal);
-        messageService.deleteMessage(id, currentUser);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        messageService.deleteMessage(id, principal.getName()); // uses email/username
+        return ResponseEntity.noContent().build();
+    }  
     }
-
-    // DTO pour recevoir le corps JSON avec senderId et contenu
-    public static class MessageDTO {
-        private Long senderId;
-        private String contenu;
-
-        public Long getSenderId() {
-            return senderId;
-        }
-
-        public void setSenderId(Long senderId) {
-            this.senderId = senderId;
-        }
-
-        public String getContenu() {
-            return contenu;
-        }
-
-        public void setContenu(String contenu) {
-            this.contenu = contenu;
-        }
-    }
-}

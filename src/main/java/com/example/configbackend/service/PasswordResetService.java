@@ -18,12 +18,12 @@ public class PasswordResetService {
     private final PasswordResetRepository tokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;  // injecté
+    private final EmailService emailService;
 
     public PasswordResetService(PasswordResetRepository tokenRepository,
-                                 UserRepository userRepository,
-                                 PasswordEncoder passwordEncoder,
-                                 EmailService emailService) {
+                                UserRepository userRepository,
+                                PasswordEncoder passwordEncoder,
+                                EmailService emailService) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -32,9 +32,13 @@ public class PasswordResetService {
 
     // Étape 1 - Générer et enregistrer un token, puis envoyer mail
     public String createPasswordResetToken(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email est requis");
+        }
+
+        Optional<User> optionalUser = userRepository.findByEmail(email.toLowerCase());
         if (optionalUser.isEmpty()) {
-            return "Aucun utilisateur trouvé avec cet email.";
+            throw new IllegalArgumentException("Aucun utilisateur trouvé avec cet email.");
         }
 
         User user = optionalUser.get();
@@ -45,7 +49,6 @@ public class PasswordResetService {
         PasswordReset resetToken = new PasswordReset(token, user, now, expiresAt);
         tokenRepository.save(resetToken);
 
-        // Envoi du mail avec le token
         emailService.sendPasswordResetEmail(user.getEmail(), token);
 
         return "Un lien de réinitialisation a été envoyé à votre adresse email.";
@@ -53,22 +56,25 @@ public class PasswordResetService {
 
     // Étape 2 - Réinitialiser le mot de passe
     public String resetPassword(String token, String newPassword) {
+        if (token == null || token.isBlank() || newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("Token et nouveau mot de passe sont requis");
+        }
+
         Optional<PasswordReset> optionalToken = tokenRepository.findByToken(token);
         if (optionalToken.isEmpty()) {
-            return "Token invalide.";
+            throw new IllegalArgumentException("Token invalide.");
         }
 
         PasswordReset resetToken = optionalToken.get();
 
         if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            return "Le token a expiré.";
+            throw new IllegalArgumentException("Le token a expiré.");
         }
 
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        // Supprimer le token après usage
         tokenRepository.delete(resetToken);
 
         return "Mot de passe réinitialisé avec succès.";

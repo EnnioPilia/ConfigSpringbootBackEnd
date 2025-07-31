@@ -1,11 +1,13 @@
 package com.example.configbackend.service;
 
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.configbackend.model.Conversation;
+import com.example.configbackend.model.User;
 import com.example.configbackend.repository.ConversationRepository;
 
 @Service
@@ -17,16 +19,34 @@ public class ConversationService {
         this.conversationRepository = conversationRepository;
     }
 
-    public Conversation creerConversation(Conversation conversation) {
+    public Conversation createConversation(User currentUser, Conversation conversation) {
+        if (conversation.getUser2() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User2 must be provided");
+        }
+        conversation.setUser1(currentUser);
         return conversationRepository.save(conversation);
     }
 
-    public Optional<Conversation> getConversationParId(Long id) {
-        return conversationRepository.findById(id);
+    public Conversation getConversationById(Long id, User currentUser) {
+        Conversation conversation = conversationRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
+
+        boolean isParticipant = conversation.getUser1().getId().equals(currentUser.getId())
+                || conversation.getUser2().getId().equals(currentUser.getId());
+
+        if (!isParticipant) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
+        return conversation;
+    }
+
+    public void deleteConversation(Long id, User currentUser) {
+        Conversation conversation = getConversationById(id, currentUser);
+        conversationRepository.delete(conversation);
     }
 
     public List<Conversation> getConversationsByUserId(Long userId) {
-        // Remplacement ici
         return conversationRepository.findByUser1IdOrUser2Id(userId, userId);
     }
 

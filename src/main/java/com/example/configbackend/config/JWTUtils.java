@@ -29,16 +29,6 @@ public class JWTUtils {
         return key;
     }
 
-    // Génère un token avec juste le username
-    public String generateToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key, SignatureAlgorithm.HS512)
-                .compact();
-    }
-
     public String generateToken(String email, String role) {
         String cleanRole = role.toUpperCase(); // 💥 Ajout défensif
         String prefixedRole = cleanRole.startsWith("ROLE_") ? cleanRole : "ROLE_" + cleanRole;

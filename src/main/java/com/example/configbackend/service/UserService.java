@@ -20,21 +20,24 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     public User updateUser(User user) {
+        // Attention à bien vérifier que l'utilisateur existe avant update en pratique
         return userRepository.save(user);
     }
 
     public User register(User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(user.getEmail().toLowerCase()).isPresent()) {
             throw new RuntimeException("Email déjà utilisé");
         }
+        user.setEmail(user.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setActif(false); 
+        user.setActif(false); // Inactif jusqu'à vérification
         user.setRole(user.getRole() == null ? "USER" : user.getRole().toUpperCase());
         return userRepository.save(user);
     }
@@ -44,21 +47,15 @@ public class UserService implements UserDetailsService {
     }
 
     public User createUser(User user) {
+        user.setEmail(user.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("USER");
         user.setActif(true);
         return userRepository.save(user);
     }
 
-    // public User createAdmin(User user) {
-    //     user.setPassword(passwordEncoder.encode(user.getPassword()));
-    //     user.setRole("ADMIN");
-    //     user.setActif(true);
-    //     return userRepository.save(user);
-    // }
-
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email.toLowerCase());
     }
 
     public Optional<User> findById(Long id) {
@@ -67,7 +64,7 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec email : " + email));
 
         if (!user.isActif()) {
@@ -95,10 +92,10 @@ public class UserService implements UserDetailsService {
     }
 
     public User registerAdmin(User user) {
+        user.setEmail(user.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("ADMIN");
         user.setActif(true);
         return userRepository.save(user);
     }
-
 }

@@ -1,7 +1,6 @@
 package com.example.configbackend.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -23,44 +22,43 @@ public class MessageService {
     private final UserRepository userRepository;
 
     public MessageService(MessageRepository messageRepository,
-            ConversationRepository conversationRepository,
-            UserRepository userRepository) {
+                          ConversationRepository conversationRepository,
+                          UserRepository userRepository) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
     }
 
-    public Message envoyerMessage(Long conversationId, Long senderId, String contenu) {
-        Optional<Conversation> convOpt = conversationRepository.findById(conversationId);
-        Optional<User> userOpt = userRepository.findById(senderId);
+    public Message sendMessage(Long conversationId, Long senderId, String content) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
 
-        if (convOpt.isEmpty() || userOpt.isEmpty()) {
-            throw new RuntimeException("Conversation ou utilisateur introuvable");
-        }
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         Message message = new Message();
-        message.setConversation(convOpt.get());
-        message.setSender(userOpt.get());
-        message.setContenu(contenu);
+        message.setConversation(conversation);
+        message.setSender(sender);
+        message.setContenu(content);
 
         return messageRepository.save(message);
     }
 
-    public List<Message> getMessagesParConversation(Long conversationId) {
+    public List<Message> getMessagesByConversation(Long conversationId) {
         Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("Conversation introuvable"));
+                .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
 
         return messageRepository.findByConversationOrderByDateEnvoiAsc(conversation);
     }
 
-    public void deleteMessage(Long messageId, User currentUser) {
+    public void deleteMessage(Long messageId, String currentUsername) {
         Message message = messageRepository.findById(messageId)
-            .orElseThrow(() -> new EntityNotFoundException("Message non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Message not found"));
 
-        if (!message.getSender().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Vous n'êtes pas autorisé à supprimer ce message");
+        if (!message.getSender().getEmail().equalsIgnoreCase(currentUsername)) {
+            throw new AccessDeniedException("You are not authorized to delete this message");
         }
 
-        messageRepository.deleteById(messageId);
+        messageRepository.delete(message);
     }
 }
