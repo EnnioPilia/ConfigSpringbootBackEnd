@@ -3,6 +3,7 @@ package com.example.configbackend.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,18 +14,23 @@ import org.springframework.stereotype.Service;
 
 import com.example.configbackend.model.User;
 import com.example.configbackend.repository.UserRepository;
+import com.example.configbackend.repository.RefreshTokenRepository;
 
 @Service
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       RefreshTokenRepository refreshTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+                this.refreshTokenRepository = refreshTokenRepository;
+
     }
 
     public User updateUser(User user) {
@@ -78,14 +84,18 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
-    public boolean deleteUserById(UUID id) {
-        Optional<User> user = userRepository.findById(id);
-        if (user.isPresent()) {
-            userRepository.deleteById(id);
-            return true;
-        }
-        return false;
+@Transactional
+public boolean deleteUserById(UUID id) {
+    // Supprimer les refresh tokens liés à l'utilisateur
+    refreshTokenRepository.deleteByUser_Id(id);
+    
+    if (userRepository.existsById(id)) {
+        userRepository.deleteById(id);
+        return true;
     }
+    return false;
+}
+
 
     public User save(User user) {
         return userRepository.save(user);

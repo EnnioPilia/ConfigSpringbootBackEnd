@@ -69,7 +69,7 @@ public class RefreshTokenService {
     @Transactional
     public void deleteByUserId(UUID userId) {
         logger.debug("Suppression des refreshTokens pour userId={}", userId);
-        refreshTokenRepository.deleteByUserId(userId);
+        refreshTokenRepository.deleteByUser_Id(userId);
     }
 
     private String generateUniqueToken() {
