@@ -1,7 +1,6 @@
 package com.example.configbackend.config;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -46,13 +45,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String authToken = null;
         String refreshToken = null;
 
+        // Chercher dans les cookies
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("authToken".equals(cookie.getName())) {
@@ -63,36 +63,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        System.out.println("[JwtAuthFilter] authToken from cookie: " + authToken);
+        System.out.println("[JwtAuthFilter] refreshToken from cookie: " + refreshToken);
+
+        // Si refreshToken pas trouvé dans cookies, chercher dans le header
+        if (refreshToken == null) {
+            refreshToken = request.getHeader("refreshToken");
+            System.out.println("[JwtAuthFilter] refreshToken from header: " + refreshToken);
+        }
+
         boolean isAuthenticated = false;
 
-        if (authToken != null && jwtUtils.validateToken(authToken)) {
+        boolean validAuthToken = authToken != null && jwtUtils.validateToken(authToken);
+        System.out.println("[JwtAuthFilter] is authToken valid? " + validAuthToken);
+
+        if (validAuthToken) {
             String username = jwtUtils.getUsernameFromToken(authToken);
+            System.out.println("[JwtAuthFilter] authToken valid for user: " + username);
             authenticateUser(username, request);
             isAuthenticated = true;
         } else if (refreshToken != null) {
             // Si authToken absent ou invalide, tenter refresh via refreshToken
             RefreshToken rt = refreshTokenService.findByToken(refreshToken).orElse(null);
-            if (rt != null && !refreshTokenService.isRefreshTokenExpired(rt)) {
-                User user = rt.getUser();
-                // Générer un nouveau JWT
-                String newToken = jwtUtils.generateToken(user.getEmail(), user.getRole().toLowerCase());
+            System.out.println("[JwtAuthFilter] RefreshToken found in DB? " + (rt != null));
+            if (rt != null) {
+                boolean isExpired = refreshTokenService.isRefreshTokenExpired(rt);
+                System.out.println("[JwtAuthFilter] is RefreshToken expired? " + isExpired);
+                if (!isExpired) {
+                    User user = rt.getUser();
+                    // Générer un nouveau JWT
+                    String newToken = jwtUtils.generateToken(user.getEmail(), user.getRole().toLowerCase());
+                    System.out.println("[JwtAuthFilter] Generated new authToken: " + newToken);
 
-                // Ajouter le nouveau cookie authToken dans la réponse
-                ResponseCookie newAuthCookie = ResponseCookie.from("authToken", newToken)
-                        .httpOnly(true)
-                        .secure(false) // Mettre à true en prod (HTTPS)
-                        .path("/")
-                        .sameSite("Strict")
-                        .maxAge(jwtUtils.getJwtExpirationMs() / 1000)
-                        .build();
-                response.setHeader("Set-Cookie", newAuthCookie.toString());
+                    // Ajouter le nouveau cookie authToken dans la réponse
+                    ResponseCookie newAuthCookie = ResponseCookie.from("authToken", newToken)
+                            .httpOnly(true)
+                            .secure(false) // Mettre à true en prod (HTTPS)
+                            .path("/")
+                            .sameSite("Strict")
+                            .maxAge(jwtUtils.getJwtExpirationMs() / 1000)
+                            .build();
+                    response.setHeader("Set-Cookie", newAuthCookie.toString());
+                    System.out.println("[JwtAuthFilter] Set new authToken cookie in response");
 
-                authenticateUser(user.getEmail(), request);
-                isAuthenticated = true;
+                    authenticateUser(user.getEmail(), request);
+                    isAuthenticated = true;
+                }
             }
         }
 
         if (!isAuthenticated) {
+            System.out.println("[JwtAuthFilter] Authentication failed, clearing context");
             SecurityContextHolder.clearContext();
         }
 
@@ -106,6 +127,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     userDetails, null, userDetails.getAuthorities());
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
+            System.out.println("[JwtAuthFilter] User authenticated: " + username);
         }
     }
 }

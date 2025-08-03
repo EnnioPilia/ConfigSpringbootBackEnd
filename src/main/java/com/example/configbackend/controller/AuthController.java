@@ -75,39 +75,14 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
     }
 
-@PostMapping("/refresh-token")
-public ResponseEntity<?> refreshToken(HttpServletRequest request) {
-    String token = null;
-
-    if (request.getCookies() != null) {
-        for (Cookie cookie : request.getCookies()) {
-            if ("refreshToken".equals(cookie.getName())) {
-                token = cookie.getValue();
-                break;
-            }
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(HttpServletRequest request) {
+        try {
+            Map<String, String> response = refreshTokenService.generateNewAccessTokenFromRefreshToken(request, jwtUtils);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
         }
     }
-
-    if (token == null) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "Refresh token manquant dans les cookies."));
-    }
-
-    Optional<RefreshToken> refreshTokenOpt = refreshTokenService.findByToken(token);
-
-    if (refreshTokenOpt.isEmpty() || refreshTokenService.isRefreshTokenExpired(refreshTokenOpt.get())) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", "Refresh token invalide ou expiré."));
-    }
-
-    User user = refreshTokenOpt.get().getUser();
-
-    String newAccessToken = jwtUtils.generateToken(user.getEmail(), user.getRole());
-
-    return ResponseEntity.ok(Map.of(
-        "accessToken", newAccessToken,
-        "message", "Nouveau access token généré avec succès"
-    ));
-}
 
 }
